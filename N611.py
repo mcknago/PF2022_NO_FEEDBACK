@@ -20,7 +20,7 @@ from skfuzzy import control as ctrl
 
 from tkinter import *
 from PIL import Image,ImageTk
-
+from arboldecis import arbolDecis
 import psutil
 
 precio_kwh= 573.240    
@@ -609,7 +609,7 @@ def Controlador():
             if intentos_comu_arbol>=3:
                 P_bateria_decision=P_bateria_decision/3
                 #print(f'La potencia PROMEDIO es {P_bateria_decision}')
-                #print(f'Controlador:El Servicio es {servicio} y la Potencia PROMEDIO de la bateria es: {P_bateria_decision}')
+                print(f'Controlador:El Servicio es {servicio} y la Potencia PROMEDIO de la bateria es: {P_bateria_decision}')
                 estado_nuevo.clear()
                 estado_probado.set()
                 estado_nuevo.wait()
@@ -696,7 +696,7 @@ def Controlador():
                 while not finalizar:
                     iteraciones_sistema=iteraciones_sistema+1
                     state_provisional=state_controler
-                    #print(f'Controlador: Recibí que el estado es {state_controler} ...')
+                    print(f'Controlador: Recibí que el estado es {state_controler} ...')
                     if fecha_actual >= fecha_corte:
                         fecha_inicial= datetime.datetime.now()
                         fecha_corte= fecha_inicial + datetime.timedelta(weeks=4)
@@ -899,169 +899,17 @@ def Controlador():
 ################################### INICIO ARBOL DE DECISIÓN ###################################
 def Arbol_decision():
     global state_controler, P_bateria_decision, PTred_controler,servicio
-
-    def ahora():
-        ahora_time = datetime.datetime.now()
-        ahora_hora = ahora_time.hour
-        ahora_minuto = ahora_time.minute
-        ahora_segundo = ahora_time.second
-        ahora_ya = ahora_hora + (ahora_minuto/60) + (ahora_segundo/3600)
-        return ahora_ya
-
-    def HR_OSC():                               #Obtener el Flag "HR" del OSC
-        # Hora de Interés 10:45 AM a 2:45 PM
-        inicio_ventana_interes = 7 + 45/60     # Check WeatherUnderground
-        fin_ventana_interes = 16 + 45/60        # Check WeatherUnderground
-        # Pedir el tiempo actual
-        now_osc = round(ahora(),4)
-        
-        if (now_osc > inicio_ventana_interes) and (now_osc < fin_ventana_interes):
-            HR = 1
-        else:
-            HR = 0
-        return HR
-
-    def BATT_OSC(BATT_POW):                     # Obtener el Flag "BATT" del OSC
-        if BATT_POW >= 5:                        # Maxima potencia seleccionada
-            BATT = 1
-        else:
-            BATT = 0
-        return BATT
-
-    def VAC_OSC(VAC_V):                              #Obtener el Flag "VAC" del OSC
-        if VAC_V == True:
-            VAC = 1
-        else:
-            VAC = 0
-        return VAC        
-    def WAIT():
-        global state_controler
-        #print(f'Arbol: Probaré el estado {state_controler} ...')
-        estado_nuevo.set()
-        estado_probado.clear()
-        estado_probado.wait()
-        #print(f'Arbol: recibí que Servicio es {servicio} y una potencia PROMEDIO de la bateria de {P_bateria_decision} ...')
-    def S_1():
-        global servicio, P_bateria_decision, state_controler
-        VAC_OS_F = VAC_OSC(servicio)
-        if VAC_OS_F == 0:
-            state_controler = 3
-            WAIT()
-            BATT_OS_F = BATT_OSC(P_bateria_decision)
-            if BATT_OS_F == 1:
-                state_controler = 3
-                WAIT()
-            else:
-                state_controler = 1
-                WAIT()
-                BATT_OS_F = BATT_OSC(P_bateria_decision)
-                if BATT_OS_F == 1:
-                    state_controler = 3
-                    WAIT()
-                else:
-                    if HR_OS == 1:
-                        state_controler = 2
-                        WAIT()
-                        BATT_OS_F = BATT_OSC(P_bateria_decision)
-                        if BATT_OS_F == 0:
-                            state_controler = 2
-                        else:
-                            state_controler = 1
-                            WAIT()
-                    else:
-                        state_controler = 1
-                        WAIT()
-
-        else:
-            if HR_OS == 1:
-                state_controler = 2
-                WAIT()
-                BATT_OS_F = BATT_OSC(P_bateria_decision)
-                if BATT_OS_F == 1:
-                    state_controler = 1
-                    WAIT()
-                    BATT_OS_F = BATT_OSC(P_bateria_decision)
-                    if BATT_OS_F == 1:
-                        state_controler = 1
-                    else:
-                        state_controler = 4
-                        WAIT()
-                        BATT_OS_F = BATT_OSC(P_bateria_decision)
-                        if BATT_OS_F == 1:
-                            state_controler = 1
-                            WAIT()
-                        else:
-                            state_controler = 4
-                else:
-                    state_controler = 2
-            else:
-                state_controler = 4
-                WAIT()
-                BATT_OS_F = BATT_OSC(P_bateria_decision)
-                if BATT_OS_F == 1:
-                    state_controler = 1
-                    WAIT()
-                else:
-                    state_controler = 4
-                    
-        return state_controler
-
-    estado_probado.wait() 
-    BATT_F = P_bateria_decision
-
-    VAC_F = servicio
-            
-    HR_OS = HR_OSC()
-    BATT_OS = BATT_OSC(BATT_F)
-    VAC_OS = VAC_OSC(VAC_F)
-
-    #print(HR_OS)
-    #print(BATT_OS)
-    #print(VAC_OS)
-    #print('   ')
-
-    #Empecemos pidiendo el tiempo actual...
-    dale = ahora()
-
-    # vamos a utilizar un tiempo de chequeo de X minutos
-    chequeo = 1/60
-
-    # Estado de inicio por defecto es S1
-    state_controler= 1
-
+    arbolDecision = arbolDecis()
+    sleep_time=1*15
     while not finalizar:
-        while (ahora() < dale + chequeo):
-            estado_probado.wait()
-            #print(f'Arbol: recibí que Servicio es {servicio} y una potencia de la bateria de {P_bateria_decision} ...')
-            if state_controler== 1:
-                state_controler= S_1()
-            elif state_controler== 2:
-                BATT_OS = BATT_OSC(P_bateria_decision)
-                if BATT_OS == 1:
-                    state_controler= 1
-                else:
-                    state_controler= 2
-            elif state_controler== 3:
-                BATT_OS = BATT_OSC(P_bateria_decision)
-                if BATT_OS == 1:
-                    state_controler= 3
-                else:
-                    state_controler= 1
-            else:
-                BATT_OS = BATT_OSC(P_bateria_decision)
-                if BATT_OS == 1:
-                    state_controler= 1
-                else:
-                    state_controler= 4
-            estado_nuevo.set()
-            estado_probado.set()   
-            #print(f'Arbol: El estado del sistema es {state_controler}')
-            #print('Arbol: Dormiré 2min...     ')
-            time.sleep(1*15)
-            #print('Arbol: He despertado')
-            estado_probado.clear()
-            
-        dale = ahora()
+        estado_probado.wait()
+        print(f'Arbol:El Servicio es {servicio} y la Potencia PROMEDIO de la bateria es: {P_bateria_decision}')
+        state_controler = arbolDecision.tomar_decision(P_bateria_decision,servicio)
+        print(f'Arbol:El Estado es {state_controler}')
+        estado_nuevo.set()
+        estado_probado.set()   
+        time.sleep(sleep_time)
+        estado_probado.clear()
 
 estado_nuevo = threading.Event() #Le dice al controlador qué debe hacer
 estado_probado = threading.Event() #Le dice al arbol qué debe hacer
