@@ -604,7 +604,7 @@ def Controlador():
         global intentos_comu_arbol,P_bateria_decision,battery_pow_controler,servicio
         if estado_nuevo.is_set and not(estado_probado.is_set()) :
             intentos_comu_arbol=intentos_comu_arbol+1
-            #print(f'La potencia de la bateria es {battery_pow_controler}')
+            print(f'La potencia de la bateria es {battery_pow_controler}')
             P_bateria_decision=P_bateria_decision+battery_pow_controler
             if intentos_comu_arbol>=3:
                 P_bateria_decision=P_bateria_decision/3
@@ -615,7 +615,6 @@ def Controlador():
                 estado_nuevo.wait()
                 P_bateria_decision=0
                 intentos_comu_arbol=0
-        print(f'Iteraciones totales: {iteraciones_sistema} Errores: {Error_sensores} Tiempo Espera: 0.5')
         Actualizar_Interfaz()
     #print('Ingrese porcentaje DAC entre 0% y 100%')
     #x_dac = float(input())
