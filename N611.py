@@ -20,9 +20,14 @@ from skfuzzy import control as ctrl
 
 from tkinter import *
 from PIL import Image,ImageTk
-from arboldecis import arbolDecis
 import psutil
 
+try:
+    from arboldecision import arbolDecision
+except:
+    print(f'AVISO DEL SISTEMA: Se presentó un problema con el controlador de estados')
+    exit()
+    
 precio_kwh= 573.240    
 state_controler=1
 
@@ -162,7 +167,7 @@ text_estado_1=Label(Frame_5,text="NORMAL",fg=font_COPor,font=("Calibri",15,"bold
 text_estado_2=Label(Frame_5,text="AHORRO",fg=font_COPor,font=("Calibri",15,"bold"),bg=bg_COPor)
 text_estado_3=Label(Frame_5,text="RESPALDO",fg=font_COPor,font=("Calibri",15,"bold"),bg=bg_COPor)
 text_estado_4=Label(Frame_5,text="EFICIENCIA",fg=font_COPor,font=("Calibri",15,"bold"),bg=bg_COPor)
-
+text_estado_error=Label(Frame_5,text="NORMAL",fg='red',font=("Calibri",15,"bold"),bg=bg_COPor)
 #Placing Frames
 Frame_0.place(relx=0,rely=0,relwidth=1,relheight=0.1)
 Frame_1.place(relx=0,rely=0.1,relwidth=0.17,relheight=0.25)
@@ -234,9 +239,9 @@ Firma.place(relx=0,rely=0.4,relwidth=0.5,relheight=0.4)
 
 def Actualizar_Interfaz():
     global text_Turbina,text_Panel,text_Red,text_factor_potencia,text_Bateria,text_Carga,text_horas,text_minutos,text_segundos,text_mes_pasado,text_mes_actual,text_con_sistema, Error_turbina, Error_panel, Error_red, Error_bateria, Error_load
-    global text_sin_sistema,text_estado_1,text_estado_2,text_estado_3,text_estado_4,logo_lb_Triste,logo_lb_Feliz,logo_lb_Flecha_Bateria_UP,logo_lb_Flecha_Bateria_D,state_interface,bg_COPor,font_COPor,n
+    global text_sin_sistema,text_estado_1,text_estado_2,text_estado_3,text_estado_4,text_estado_error,logo_lb_Triste,logo_lb_Feliz,logo_lb_Flecha_Bateria_UP,logo_lb_Flecha_Bateria_D,state_interface,bg_COPor,font_COPor,n
     global wt_power_controler,panel_power_controler,PTred_controler,FPred_controler,load_pow_controler,battery_pow_controler,mes_actual_controler,mes_anterior_controler,con_sistema_controler,sin_sistema_controler,tiempo_sin_servicio_controler,state_provisional
-    state_interface.config(text="S"+ str(state_provisional))
+
     text_Turbina.config(text=round(wt_power_controler,3))
     text_Panel.config(text=round(panel_power_controler,3))
     text_Red.config(text=round(PTred_controler,3))
@@ -282,15 +287,27 @@ def Actualizar_Interfaz():
 
 
         #Cmbio de logos
-    if state_provisional==1:
+    if state_controler==0:
+        state_interface.config(text="S1",fg='red')
+        text_estado_error.place(relx=0.25,rely=0.5,relwidth=0.5,relheight=0.15)
+    elif state_provisional==1:
+        state_interface.config(text="S1",fg=font_COPor)
+        text_estado_error.place_forget()
         text_estado_1.place(relx=0.25,rely=0.5,relwidth=0.5,relheight=0.15)
     elif state_provisional==2:
+        state_interface.config(text="S2",fg=font_COPor)
+        text_estado_error.place_forget()
         text_estado_2.place(relx=0.25,rely=0.5,relwidth=0.5,relheight=0.15)
     elif state_provisional==3:
+        state_interface.config(text="S3",fg=font_COPor)
+        text_estado_error.place_forget()
         text_estado_3.place(relx=0.25,rely=0.5,relwidth=0.5,relheight=0.15)
-    else:
+    elif state_provisional==4:
+        state_interface.config(text="S4",fg=font_COPor)
+        text_estado_error.place_forget()
         text_estado_4.place(relx=0.25,rely=0.5,relwidth=0.5,relheight=0.15)
 
+    
     if con_sistema_controler>sin_sistema_controler:
         logo_lb_Feliz.place_forget()
         logo_lb_Triste.place(relx=0.7,rely=0,relwidth=0.3,relheight=1)
@@ -588,7 +605,6 @@ def Controlador():
         fecha_actual=datetime.datetime.now()
         tiempo_subdelta=(fecha_actual-tiempo_anterior).total_seconds()
         time_delta=time_delta+int(tiempo_subdelta)
-        print(f'Tiempo: {tiempo_subdelta} Estado: {state_provisional}')
         power_delta=power_delta+load_pow_controler*eficiencia_dcac
         power_delta_con_sistema=power_delta_con_sistema + PTred_controler
         tiempo_anterior=fecha_actual     
@@ -694,7 +710,10 @@ def Controlador():
             try:    
                 while not finalizar:
                     iteraciones_sistema=iteraciones_sistema+1
-                    state_provisional=state_controler
+                    if state_controler==0:
+                        state_provisional=1
+                    else:
+                        state_provisional=state_controler
                     print(f'Controlador: Recibí que el estado es {state_controler} ...')
                     if fecha_actual >= fecha_corte:
                         fecha_inicial= datetime.datetime.now()
@@ -898,13 +917,22 @@ def Controlador():
 ################################### INICIO ARBOL DE DECISIÓN ###################################
 def Arbol_decision():
     global state_controler, P_bateria_decision, PTred_controler,servicio
-    arbolDecision = arbolDecis()
-    sleep_time=1*15
+    ArbolDecision = arbolDecision()
     while not finalizar:
         estado_probado.wait()
-        print(f'Arbol:El Servicio es {servicio} y la Potencia PROMEDIO de la bateria es: {P_bateria_decision}')
-        state_controler = arbolDecision.tomar_decision(P_bateria_decision,servicio)
-        print(f'Arbol:El Estado es {state_controler}')
+        try:
+            return_controller = ArbolDecision.tomar_decision(P_bateria_decision,servicio)
+        except:
+            Error_arbol=True
+        try:
+            state_controler= int(return_controller[0])
+        except:
+            state_controler=0
+        try:
+            sleep_time=return_controller[1]
+        except:
+            sleep_time=60
+        print(f'Arbol:El Estado es {state_controler} Dormiré {sleep_time} segundos')
         estado_nuevo.set()
         estado_probado.set()   
         time.sleep(sleep_time)
