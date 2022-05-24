@@ -22,11 +22,9 @@ from tkinter import *
 from PIL import Image,ImageTk
 import psutil
 
-try:
-    from arboldecision import arbolDecision
-except:
-    print(f'AVISO DEL SISTEMA: Se presentó un problema con el controlador de estados')
-    exit()
+
+from arboldecision import arbolDecis
+
     
 precio_kwh= 573.240    
 state_controler=1
@@ -620,12 +618,9 @@ def Controlador():
         global intentos_comu_arbol,P_bateria_decision,battery_pow_controler,servicio
         if estado_nuevo.is_set and not(estado_probado.is_set()) :
             intentos_comu_arbol=intentos_comu_arbol+1
-            print(f'La potencia de la bateria es {battery_pow_controler}')
             P_bateria_decision=P_bateria_decision+battery_pow_controler
             if intentos_comu_arbol>=3:
                 P_bateria_decision=P_bateria_decision/3
-                #print(f'La potencia PROMEDIO es {P_bateria_decision}')
-                print(f'Controlador:El Servicio es {servicio} y la Potencia PROMEDIO de la bateria es: {P_bateria_decision}')
                 estado_nuevo.clear()
                 estado_probado.set()
                 estado_nuevo.wait()
@@ -714,7 +709,6 @@ def Controlador():
                         state_provisional=1
                     else:
                         state_provisional=state_controler
-                    print(f'Controlador: Recibí que el estado es {state_controler} ...')
                     if fecha_actual >= fecha_corte:
                         fecha_inicial= datetime.datetime.now()
                         fecha_corte= fecha_inicial + datetime.timedelta(weeks=4)
@@ -917,11 +911,11 @@ def Controlador():
 ################################### INICIO ARBOL DE DECISIÓN ###################################
 def Arbol_decision():
     global state_controler, P_bateria_decision, PTred_controler,servicio
-    ArbolDecision = arbolDecision()
+    arboldecis = arbolDecis()
     while not finalizar:
         estado_probado.wait()
         try:
-            return_controller = ArbolDecision.tomar_decision(P_bateria_decision,servicio)
+            return_controller = arboldecis.tomar_decision(state_controler,P_bateria_decision,servicio)
         except:
             Error_arbol=True
         try:
@@ -932,7 +926,6 @@ def Arbol_decision():
             sleep_time=return_controller[1]
         except:
             sleep_time=60
-        print(f'Arbol:El Estado es {state_controler} Dormiré {sleep_time} segundos')
         estado_nuevo.set()
         estado_probado.set()   
         time.sleep(sleep_time)
