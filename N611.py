@@ -920,6 +920,8 @@ def Arbol_decision():
             Error_arbol=True
         try:
             state_controler= int(return_controller[0])
+            if not(state_controler in [1,2,3,4]):
+                state_controler=0               
         except:
             state_controler=0
         try:
