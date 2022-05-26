@@ -917,7 +917,7 @@ def Arbol_decision():
         try:
             return_controller = arboldecis.tomar_decision(state_controler,P_bateria_decision,servicio)
         except:
-            Error_arbol=True
+            state_controler=0
         try:
             state_controler= int(return_controller[0])
             if not(state_controler in [1,2,3,4]):
