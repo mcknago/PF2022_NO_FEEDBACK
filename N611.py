@@ -925,7 +925,7 @@ def Arbol_decision():
         except:
             state_controler=0
         try:
-            sleep_time=return_controller[1]
+            sleep_time=float(return_controller[1])
         except:
             sleep_time=60
         estado_nuevo.set()
