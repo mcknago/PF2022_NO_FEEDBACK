@@ -348,6 +348,7 @@ def Controlador():
             ina2601 = adafruit_ina260.INA260(i2c_bus, 0x43)
             ina2602 = adafruit_ina260.INA260(i2c_bus, 0x46)
             ina2603 = adafruit_ina260.INA260(i2c_bus, 0x47)
+            ina2604 = adafruit_ina260.INA260(i2c_bus, 0x40)
             dac_setpoint = adafruit_mcp4725.MCP4725(i2c_bus, address=0x61)
             # Configuration to use 32 samples averaging for both bus voltage and shunt voltage
             #ina2191.bus_adc_resolution = ADCResolution.ADCRES_12BIT_32S
@@ -407,27 +408,9 @@ def Controlador():
 
 
     def ask_power_grid_dc():
-        bus_voltage_1 = ina2191.bus_voltage
-        current_1 = ina2191.current
-        power1 = bus_voltage_1 * (current_1 / 1000)  # power in watts
-        time.sleep(0.5)
-        bus_voltage_2 = ina2192.bus_voltage
-        current_2 = ina2192.current
-        power2 = bus_voltage_2 * (current_2 / 1000)  # power in watts
-        time.sleep(0.5)
-        power_combo1 = power1 + power2
-                
-        bus_voltage_3 = ina2193.bus_voltage
-        current_3 = ina2193.current
-        power3 = bus_voltage_3 * (current_3 / 1000)  # power in watts
-        time.sleep(0.5)
-        bus_voltage_4 = ina2194.bus_voltage
-        current_4 = ina2194.current
-        power4 = bus_voltage_4 * (current_4 / 1000)  # power in watts
-        time.sleep(0.5)
-        power_combo2 = power3 + power4
-
-        power_grid = power_combo1 + power_combo2
+        current_grid_cd = ina2604.current / 1000
+        power_grid_dc = ina2604.voltage * current_sp  # power in watts
+        time.sleep(0.5)   
         return power_grid
 
     def ask_power_wt():
@@ -644,10 +627,8 @@ def Controlador():
     dac_setpoint.normalized_value = y_dac
     time.sleep (0.5)
 
-    #y1dcdc = ask_power_grid_dc()
-    #print("Power Grid DC : {:6.3f}   W".format(y1dcdc))
-    (PTred_controler,FPred_controler)=ask_ac()  
-    y1dcdc =  PTred_controler*0.8 #MIENTRAS SE COMPRAN LOS SENSORES
+    y1dcdc = ask_power_grid_dc()
+    print("Power Grid DC : {:6.3f}   W".format(y1dcdc))
     power_fz.append(y1dcdc)
     power_fz.pop(0)
 
